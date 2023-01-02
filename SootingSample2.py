@@ -313,7 +313,7 @@ class App:
         cleanup_list(bullet_list)
         cleanup_list(blast_list)
 
-        if pyxel.btnp(pyxel.KEY_RETURN):
+        if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
             self.scene = SCENE_PLAY
             self.player.x = pyxel.width / 2
             self.player.y = pyxel.height - 20
