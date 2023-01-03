@@ -1,13 +1,12 @@
 from random import random
-
 import pyxel
 
-#画面の大きさ
+# 画面の大きさ
 SCENE_TITLE = 0
 SCENE_PLAY = 1
 SCENE_GAMEOVER = 2
 
-#星の数、手前の星の色、奥の星の色
+# 星の数、手前の星の色、奥の星の色
 STAR_COUNT = 50
 STAR_COLOR_HIGH = 10
 STAR_COLOR_LOW = 4
@@ -17,56 +16,63 @@ PLAYER_WIDTH = 8
 PLAYER_HEIGHT = 8
 PLAYER_SPEED = 2
 
-#弾の大きさ、色、速さ
+# 弾の大きさ、色、速さ、発射間隔（大きいほど間隔が長い）
 BULLET_WIDTH = 2
 BULLET_HEIGHT = 5
-BULLET_COLOR = 8
+BULLET_COLOR = 7
 BULLET_SPEED = 4
+BULLET_INTERVAL = 6
 
-#敵の大きさ、速さ
+# 敵の大きさ、速さ、出現率（小さいほど多い）
 ENEMY_WIDTH = 8
 ENEMY_HEIGHT = 8
 ENEMY_SPEED = 1
+ENEMY_APPEAR = 6
 
-#爆発の大きさ
+# 爆発の大きさ
 BLAST_START_RADIUS = 1
 BLAST_END_RADIUS = 8
 BLAST_COLOR_IN = 7
 BLAST_COLOR_OUT = 10
 
-#敵のリスト
+# 敵のリスト
 enemy_list = []
-#弾のリスト
+# 弾のリスト
 bullet_list = []
-#爆発のリスト
+# 爆発のリスト
 blast_list = []
 
-#更新
-def update_list(list):
-    for elem in list:
+
+# 更新
+def update_list(lists):
+    for elem in lists:
         elem.update()
 
-#描画 
-def draw_list(list):
-    for elem in list:
+
+# 描画
+def draw_list(lists):
+    for elem in lists:
         elem.draw()
 
-#初期化
-def cleanup_list(list):
+
+# 初期化
+def cleanup_list(lists):
     i = 0
-    while i < len(list):
-        elem = list[i]
+    while i < len(lists):
+        elem = lists[i]
         if not elem.alive:
-            list.pop(i)
+            lists.pop(i)
         else:
             i += 1
-#背景
+
+
+# 背景
 class Background:
     def __init__(self):
         self.star_list = []
         for i in range(STAR_COUNT):
             self.star_list.append(
-                (random() * pyxel.width, random() * pyxel.height, random() * 1.5 + 1)  
+                (random() * pyxel.width, random() * pyxel.height, random() * 1.5 + 1)
             )
 
     def update(self):
@@ -80,14 +86,16 @@ class Background:
         for (x, y, speed) in self.star_list:
             pyxel.pset(x, y, STAR_COLOR_HIGH if speed > 1.8 else STAR_COLOR_LOW)
 
-#プレイヤー  
+
+# プレイヤー
 class Player:
     def __init__(self, x, y):
-        self.x = x  
+        self.x = x
         self.y = y
         self.w = PLAYER_WIDTH
         self.h = PLAYER_HEIGHT
         self.alive = True
+        self.i = 0
 
     def update(self):
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
@@ -107,18 +115,27 @@ class Player:
         self.y = max(self.y, 0)
         self.y = min(self.y, pyxel.height - self.h)
 
-        if pyxel.btnp(pyxel.KEY_A) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
+        # self.i += 1
+        # if pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_A):
+        #     # 6フレーム目に発射するが、連打した時に6フレーム外だと発射されない……。
+        #     if self.i % BULLET_INTERVAL == 0:
+        #         Bullet(
+        #             self.x + (PLAYER_WIDTH - BULLET_WIDTH) / 2, self.y - BULLET_HEIGHT / 2
+        #         )
+        #         pyxel.play(0, 0)
+
+        # 長押しでも弾が発射されるようにした。
+        if pyxel.btnp(pyxel.KEY_A, 1, BULLET_INTERVAL) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A, 1, BULLET_INTERVAL):
             Bullet(
                 self.x + (PLAYER_WIDTH - BULLET_WIDTH) / 2, self.y - BULLET_HEIGHT / 2
             )
-
             pyxel.play(0, 0)
 
     def draw(self):
         pyxel.blt(self.x, self.y, 0, 0, 0, self.w, self.h, 0)
 
 
-#弾      
+# 弾
 class Bullet:
     def __init__(self, x, y):
         self.x = x
@@ -138,7 +155,8 @@ class Bullet:
     def draw(self):
         pyxel.rect(self.x, self.y, self.w, self.h, BULLET_COLOR)
 
-#敵  
+
+# 敵
 class Enemy:
     def __init__(self, x, y):
         self.x = x
@@ -152,9 +170,9 @@ class Enemy:
         enemy_list.append(self)
 
     def update(self):
-        if(pyxel.frame_count + self.offset) % 60 < 30:
+        if (pyxel.frame_count + self.offset) % 60 < 30:
             self.x += ENEMY_SPEED
-            self.dir = 1 
+            self.dir = 1
 
         else:
             self.x -= ENEMY_SPEED
@@ -168,7 +186,8 @@ class Enemy:
     def draw(self):
         pyxel.blt(self.x, self.y, 0, 8, 0, self.w * self.dir, self.h, 0)
 
-#爆発           
+
+# 爆発
 class Blast:
     def __init__(self, x, y):
         self.x = x
@@ -188,11 +207,12 @@ class Blast:
         pyxel.circ(self.x, self.y, self.radius, BLAST_COLOR_IN)
         pyxel.circb(self.x, self.y, self.radius, BLAST_COLOR_OUT)
 
+
 class App:
     def __init__(self):
         pyxel.init(120, 160, title="Shooting")
 
-        #自機のイメージ
+        # 自機のイメージ
         pyxel.image(0).set(
             0,
             0,
@@ -204,11 +224,11 @@ class App:
                 "77033077",
                 "785cc587",
                 "85c77c58",
-                "0c0880c0",   
+                "0c0880c0",
             ],
         )
 
-        #敵のイメージ
+        # 敵のイメージ
         pyxel.image(0).set(
             8,
             0,
@@ -247,22 +267,21 @@ class App:
         elif self.scene == SCENE_GAMEOVER:
             self.update_gameover_scene()
 
-
     def update_title_scene(self):
         if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
             self.scene = SCENE_PLAY
 
     def update_play_scene(self):
-        if pyxel.frame_count % 6 == 0:
+        if pyxel.frame_count % ENEMY_APPEAR == 0:
             Enemy(random() * (pyxel.width - PLAYER_WIDTH), 0)
 
         for a in enemy_list:
             for b in bullet_list:
                 if (
-                    a.x + a.w > b.x
-                    and b.x + b.w > a.x
-                    and a.y + a.h > b.y
-                    and b.y + b.h > a.y
+                        a.x + a.w > b.x
+                        and b.x + b.w > a.x
+                        and a.y + a.h > b.y
+                        and b.y + b.h > a.y
                 ):
                     a.alive = False
                     b.alive = False
@@ -276,11 +295,11 @@ class App:
                     self.score += 10
 
         for enemy in enemy_list:
-            if(
-                self.player.x + self.player.w > enemy.x
-                and enemy.x + enemy.w > self.player.x
-                and self.player.y + self.player.h > enemy.y
-                and enemy.y + enemy.h > self.player.y
+            if (
+                    self.player.x + self.player.w > enemy.x
+                    and enemy.x + enemy.w > self.player.x
+                    and self.player.y + self.player.h > enemy.y
+                    and enemy.y + enemy.h > self.player.y
             ):
                 enemy.alive = False
 
@@ -293,7 +312,7 @@ class App:
                 pyxel.play(1, 1)
                 self.life -= 1
                 if self.life <= 0:
-                   self.scene = SCENE_GAMEOVER
+                    self.scene = SCENE_GAMEOVER
 
         self.player.update()
         update_list(bullet_list)
@@ -354,7 +373,7 @@ class App:
         draw_list(enemy_list)
         draw_list(blast_list)
 
-        pyxel.text(43, 66, "GAMEOVER", 11)
+        pyxel.text(43, 66, "GAME OVER", 11)
         pyxel.text(31, 126, "PRESS ENTER or B", 12)
 
 
